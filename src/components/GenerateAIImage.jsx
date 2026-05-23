@@ -17,67 +17,41 @@ const GenerateAIImage = () => {
   console.log("Imagen recibida:", image);
   console.log("País seleccionado:", country);
 
+  const BACKEND_URL = "http://localhost:4000/api/generate";
   const AIimage = "";
 
   useEffect(() => {
     const generateImage = async () => {
-      if (!image || !country) return;
+      if (!country) return;
       setLoading(true);
 
-      const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash-image",
-      });
-
-      // Convierte la imagen a base64 si es un File/Blob
-      const toBase64 = (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            // Elimina cualquier prefijo "data:image/xxx;base64,"
-            const base64 = reader.result.split(",")[1];
-            resolve(base64);
-          };
-          reader.onerror = (error) => reject(error);
-          reader.readAsDataURL(file);
-        });
-
-      // Uso en tu función:
-      let imageBase64 = image;
-      if (image instanceof File || image instanceof Blob) {
-        imageBase64 = await toBase64(image);
-      }
-      if (
-        typeof imageBase64 === "string" &&
-        imageBase64.startsWith("data:image")
-      ) {
-        imageBase64 = imageBase64.split(",")[1];
-      }
-
-      const prompt = `Create a caricature of this person with the flag of ${country} in the background.`;
+      const prompt = `Caricature of a person with the flag of ${country} in the background`;
 
       try {
-        const result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: imageBase64,
-            },
+        const response = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        ]);
-        const response = await result.response;
-        const generated =
-          response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        setOutputImage(`data:image/png;base64,${generated}`);
+          body: JSON.stringify({ prompt }),
+        });
+
+        console.log("Respuesta del backend:", response);
+
+        const imageBlob = await response.blob();
+        console.log(imageBlob, "imageBlob");
+
+        const imageUrl = URL.createObjectURL(imageBlob);
+        console.log(imageUrl, "imageUrl");
+        setOutputImage(imageUrl);
       } catch (e) {
-        alert("Error generando la imagen IA");
+        console.error("Error generando la imagen IA", e);
       }
       setLoading(false);
     };
 
     generateImage();
-  }, [image, country]);
+  }, [country]);
 
   return (
     <div className="faded_background">
@@ -98,7 +72,10 @@ const GenerateAIImage = () => {
               <div>
                 {loading && <div>Generando imagen IA...</div>}
                 {outputImage && (
-                  <img src={outputImage} alt="Imagen IA generada" />
+                  <img
+                    src={"data:image/jpeg;base64," + outputImage}
+                    alt="Imagen IA generada"
+                  />
                 )}
               </div>
             }

@@ -16,7 +16,7 @@ const Home = () => {
   const location = useLocation();
 
   const flags = [
-    { name: "México", image: mexico },
+    { name: "Mexico", image: mexico },
     { name: "Argentina", image: argentina },
     { name: "Francia", image: francia },
     { name: "Brasil", image: brasil },
